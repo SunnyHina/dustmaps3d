@@ -1,0 +1,14 @@
+Metadata-Version: 2.4
+Name: 3d_dust_maps
+Version: 1.0.0
+Summary: An all-sky 3D dust map Based on Gaia and LAMOST.
+Author: Wang Tao
+Requires-Python: >=3.8
+Requires-Dist: numpy
+Requires-Dist: pandas
+Requires-Dist: astropy
+Requires-Dist: astropy-healpix
+Dynamic: author
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
