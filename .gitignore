@@ -1,0 +1,2 @@
+echo "dist/" >> .gitignore
+echo "3d_dust_maps/data/" >> .gitignore
