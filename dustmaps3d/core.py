@@ -1,13 +1,32 @@
-import numpy as np
+# dustmaps3d/core.py
+import os
 import pandas as pd
+import numpy as np
+import urllib.request
+from tqdm import tqdm
 from astropy_healpix import HEALPix
 from astropy import units as u
-import importlib.resources as pkg_resources
 
-np.seterr(over='ignore')
+# 远程数据地址
+DATA_URL = "https://github.com/Grapeknight/dustmaps3d/releases/download/v1.0/data_v1.parquet"
+LOCAL_DATA_PATH = os.path.join(os.path.dirname(__file__), "data_v1.parquet")
 
-with pkg_resources.path("3d_dust_maps.data", "data.parquet") as data_path:
-    df = pd.read_parquet(data_path)
+class TqdmUpTo(tqdm):
+    def update_to(self, b=1, bsize=1, tsize=None):
+        if tsize is not None:
+            self.total = tsize
+        self.update(b * bsize - self.n)
+
+def download_data_if_needed():
+    if not os.path.exists(LOCAL_DATA_PATH):
+        print("Downloading 3D dust map data... (~686MB)")
+        with TqdmUpTo(unit='B', unit_scale=True, unit_divisor=1024, miniters=1, desc="data_v1.parquet") as t:
+            urllib.request.urlretrieve(DATA_URL, LOCAL_DATA_PATH, reporthook=t.update_to)
+    return pd.read_parquet(LOCAL_DATA_PATH)
+
+df = download_data_if_needed()
+
+# 以下保留原始函数定义
 
 def bubble_diffuse(x,h,b_lim,diffuse_dust_rho,bubble): 
     span = 0.01
@@ -26,7 +45,7 @@ def component4(x, b_lim, bubble, diffuse_dust_rho, h, distance_1, span_1, Cum_EB
     Numerator_2 = Cum_EBV_2*(1/np.exp(5 * (distance_2 + (span_2*2) + bubble)/span_2) + 1)
     Numerator_3 = Cum_EBV_3*(1/np.exp(5 * (distance_3 + (span_3*2) + bubble)/span_3) + 1)
     Numerator_4 = Cum_EBV_4*(1/np.exp(5 * (distance_4 + (span_4*2) + bubble)/span_4) + 1)
-    
+
     return (bubble_diffuse(x,h,b_lim,diffuse_dust_rho,bubble)
                     +((Numerator_1/ (1 + np.exp(-5 * ((x) - (distance_1 + (span_1*2) + bubble))/span_1))) 
                     -(Numerator_1 / (1 + np.exp(5 * (distance_1 + (span_1*2) + bubble)/span_1))))
@@ -89,7 +108,10 @@ def map(df):
     sigma_finally[mask] = df['sigma_2_max'][mask]
     return EBV, dust, sigma_finally, df['max_distance']
 
-def Extinction_3D_Map(l,b,d):
+def dustmaps3d(l,b,d):
+    l = np.atleast_1d(l)
+    b = np.atleast_1d(b)
+    d = np.atleast_1d(d)
     healpix = HEALPix(nside=1024, order='ring')
     pix_ids = healpix.lonlat_to_healpix(l * u.deg, b * u.deg)
     rows = df.iloc[pix_ids].copy()

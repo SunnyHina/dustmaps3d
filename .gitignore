@@ -1,2 +1,6 @@
-echo "dist/" >> .gitignore
-echo "3d_dust_maps/data/" >> .gitignore
+# Ignore local data + dist builds
+*.parquet
+3d_dust_maps/data/
+dist/
+*.egg-info/
+__pycache__/
