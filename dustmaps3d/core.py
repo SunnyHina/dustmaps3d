@@ -7,9 +7,9 @@ from tqdm import tqdm
 from astropy_healpix import HEALPix
 from astropy import units as u
 
-# 远程数据地址
-DATA_URL = "https://github.com/Grapeknight/dustmaps3d/releases/download/v1.0/data_v1.parquet"
-LOCAL_DATA_PATH = os.path.join(os.path.dirname(__file__), "data_v1.parquet")
+# 远程数据地址（v2.0）
+DATA_URL = "https://github.com/Grapeknight/dustmaps3d/releases/download/v2.0/data_v2.parquet"
+LOCAL_DATA_PATH = os.path.join(os.path.dirname(__file__), "data_v2.parquet")
 
 class TqdmUpTo(tqdm):
     def update_to(self, b=1, bsize=1, tsize=None):
@@ -19,14 +19,12 @@ class TqdmUpTo(tqdm):
 
 def download_data_if_needed():
     if not os.path.exists(LOCAL_DATA_PATH):
-        print("Downloading 3D dust map data... (~686MB)")
-        with TqdmUpTo(unit='B', unit_scale=True, unit_divisor=1024, miniters=1, desc="data_v1.parquet") as t:
+        print("Downloading 3D dust map data... (~700MB)")
+        with TqdmUpTo(unit='B', unit_scale=True, unit_divisor=1024, miniters=1, desc="data_v2.parquet") as t:
             urllib.request.urlretrieve(DATA_URL, LOCAL_DATA_PATH, reporthook=t.update_to)
     return pd.read_parquet(LOCAL_DATA_PATH)
 
 df = download_data_if_needed()
-
-# 以下保留原始函数定义
 
 def bubble_diffuse(x,h,b_lim,diffuse_dust_rho,bubble): 
     span = 0.01
