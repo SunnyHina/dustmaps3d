@@ -1,3 +1,5 @@
+**Read this in: [English](README.md) | [中文](README.zh-CN.md)**
+
 # dustmaps3d
 
 **🌌 基于 Gaia 和 LAMOST 的全天三维尘埃消光图**
