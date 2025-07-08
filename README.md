@@ -1,4 +1,4 @@
-**Read this in: [English](README.md) | [中文](README_zh.md)**
+**Read this in: [English](README.md) | [中文](README.zh-CN.md)**
 
 # dustmaps3d
 
