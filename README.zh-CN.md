@@ -58,7 +58,8 @@ l = data['l'].astype(float)
 b = data['b'].astype(float)
 d = data['distance'].astype(float)
 
-EBV, dust, sigma, max_d = dustmaps3d(l, b, d)
+EBV, dust, sigma, max_d = dustmaps3d(l, b, d, n_process = 4)
+# n_process: 可选参数，指定使用的线程数，默认为单线程；例如设置为 4 表示使用 4 个线程加速计算
 
 data['EBV_3d'] = EBV
 data['dust'] = dust

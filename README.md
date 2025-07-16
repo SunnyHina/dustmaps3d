@@ -57,7 +57,8 @@ l = data['l'].astype(float)
 b = data['b'].astype(float)
 d = data['distance'].astype(float)
 
-EBV, dust, sigma, max_d = dustmaps3d(l, b, d)
+EBV, dust, sigma, max_d = dustmaps3d(l, b, d, n_process = 4)
+# n_process: Optional parameter to specify number of threads; default is single-threaded. For example, set to 4 to use 4 threads for faster computation.
 
 data['EBV_3d'] = EBV
 data['dust'] = dust
