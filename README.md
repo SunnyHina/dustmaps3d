@@ -82,7 +82,6 @@ Estimates 3D dust extinction and related quantities for given galactic coordinat
 | `l`         | np.ndarray   | Galactic longitude                 | degrees  |
 | `b`         | np.ndarray   | Galactic latitude                  | degrees  |
 | `d`         | np.ndarray   | Distance                           | kpc      |
-| `n_process` | int, optional| Number of processes for parallel computing | –   |
 
 #### Returns:
 

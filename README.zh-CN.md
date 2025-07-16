@@ -70,7 +70,7 @@ data.write('output.fits', overwrite=True)
 ---
 ## 🧠 函数说明
 
-### `dustmaps3d(l, b, d, n_process=None)`
+### `dustmaps3d(l, b, d)`
 
 根据输入的银河坐标 `(l, b)` 和距离 `d`，返回对应的尘埃消光信息。
 
@@ -79,7 +79,6 @@ data.write('output.fits', overwrite=True)
 | `l`          | np.ndarray   | 银经                      | 度       |
 | `b`          | np.ndarray   | 银纬                      | 度       |
 | `d`          | np.ndarray   | 距离                      | kpc      |
-| `n_process`  | int, 可选    | 并行处理的进程数量，如设为 None 则默认使用单线程 | – |
 
 #### 返回：
 
