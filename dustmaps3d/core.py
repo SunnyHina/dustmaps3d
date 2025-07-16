@@ -182,7 +182,7 @@ def dustmaps3d(l, b, d):
     return EBV, dust, sigma_finally, max_d
 
 
-def plot_dust_section(
+def plot_dust_xyz(
     axis1, range1,
     axis2, range2,
     fixed_axis, fixed_value,
@@ -221,7 +221,7 @@ def plot_dust_section(
     from matplotlib.colors import LogNorm, Normalize
     from scipy.ndimage import gaussian_filter
     from mpl_toolkits.axes_grid1 import make_axes_locatable
-    
+
     # 1. 检查维度合法性
     all_axes = {'x', 'y', 'z'}
     assert {axis1, axis2, fixed_axis} == all_axes, "axis 输入必须覆盖 x, y, z 各一维"
