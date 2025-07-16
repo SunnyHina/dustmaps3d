@@ -19,7 +19,7 @@ pip install dustmaps3d
 ```
 
 **Note:** Installing the package does *not* include the data file.  
-The ~350 MB model data will be **automatically downloaded** from GitHub on **first use**.  
+The ~400 MB model data will be **automatically downloaded** from GitHub on **first use**.  
 ⚠️ If you experience network issues when downloading from GitHub,  
 you can manually download the data from NADC:  
 🔗 https://nadc.china-vo.org/res/r101619/
@@ -48,24 +48,28 @@ print(f"Max distance: {max_d.iloc[0]:.4f} kpc")
 
 ```python
 import numpy as np
-from astropy.io import fits
 from astropy.table import Table
 from dustmaps3d import dustmaps3d
 
-data = Table.read('input.fits')
-l = data['l'].astype(float)
-b = data['b'].astype(float)
-d = data['distance'].astype(float)
+def main():
+    data = Table.read('input.fits')   
+    l = data['l'].astype(float)
+    b = data['b'].astype(float)
+    d = data['distance'].astype(float)
 
-EBV, dust, sigma, max_d = dustmaps3d(l, b, d, n_process = 4)
-# n_process: Optional parameter to specify number of threads; default is single-threaded. For example, set to 4 to use 4 threads for faster computation.
+    # To enable multi-process parallelization, specify the 'n_process' parameter with the desired number of processes (e.g., n_process=4). If omitted, the function will run in single-threaded mode and does not require wrapping inside a main() function.
+    EBV, dust, sigma, max_d = dustmaps3d(l, b, d, n_process=4)
 
-data['EBV_3d'] = EBV
-data['dust'] = dust
-data['sigma'] = sigma
-data['max_distance'] = max_d
+    data['EBV_3d'] = EBV
+    data['dust'] = dust
+    data['sigma'] = sigma
+    data['max_distance'] = max_d
+    data.write('output.fits', overwrite=True)
 
-data.write('output.fits', overwrite=True)
+
+# When using multiprocessing, wrap the main routine in this conditional statement to ensure compatibility with Windows operating system.
+if __name__ == '__main__':
+    main()
 ```
 
 ---
@@ -103,7 +107,7 @@ Estimates 3D dust extinction and related quantities for given galactic coordinat
 
 - Fully vectorized and optimized with NumPy
 - Supports multiprocessing with `n_process` argument
-- On a modern personal computer, evaluating **100 million stars takes only ~60 seconds**
+- On a modern personal computer, evaluating **100 million stars takes only ~100 seconds**
 
 ---
 

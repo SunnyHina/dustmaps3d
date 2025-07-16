@@ -14,7 +14,7 @@ RELEASE_NOTES = f"""
 
 - 🔢 Version: {TAG}
 - 📅 Date: {date.today()}
-- 📁 File: `{ASSET_NAME}` (~350MB)
+- 📁 File: `{ASSET_NAME}` (~400MB)
 
 👉 If GitHub download fails due to network issues, you can get the data via:
 🔗 NADC: https://nadc.china-vo.org/res/r101619/

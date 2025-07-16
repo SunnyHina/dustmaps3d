@@ -21,7 +21,7 @@ pip install dustmaps3d
 ```
 
 **注意：** 安装包本身并不包含模型数据。  
-约 350MB 的数据文件将在**首次使用时自动从 GitHub 下载**。  
+约 400MB 的数据文件将在**首次使用时自动从 GitHub 下载**。  
 ⚠️ 若遇到网络连接问题，也可从 NADC 手动下载数据：  
 🔗 https://nadc.china-vo.org/res/r101619/
 
@@ -49,24 +49,27 @@ print(f"Max distance: {max_d.iloc[0]:.4f} kpc")
 
 ```python
 import numpy as np
-from astropy.io import fits
 from astropy.table import Table
 from dustmaps3d import dustmaps3d
 
-data = Table.read('input.fits')
-l = data['l'].astype(float)
-b = data['b'].astype(float)
-d = data['distance'].astype(float)
+def main():
+    data = Table.read('input.fits')   
+    l = data['l'].astype(float)
+    b = data['b'].astype(float)
+    d = data['distance'].astype(float)
 
-EBV, dust, sigma, max_d = dustmaps3d(l, b, d, n_process = 4)
-# n_process: 可选参数，指定使用的线程数，默认为单线程；例如设置为 4 表示使用 4 个线程加速计算
+    # 若要启用多线程加速，请指定参数 n_process = 进程数（例如 n_process=4），不指定 n_process 即为单线程，就可以不用包裹进main函数。
+    EBV, dust, sigma, max_d = dustmaps3d(l, b, d, n_process=4)
 
-data['EBV_3d'] = EBV
-data['dust'] = dust
-data['sigma'] = sigma
-data['max_distance'] = max_d
+    data['EBV_3d'] = EBV
+    data['dust'] = dust
+    data['sigma'] = sigma
+    data['max_distance'] = max_d
+    data.write('output.fits', overwrite=True)
 
-data.write('output.fits', overwrite=True)
+# 使用多进程时，为确保 Windows 兼容性，主程序必须包裹在此判断中
+if __name__ == '__main__':
+    main()
 ```
 
 ---
@@ -102,7 +105,7 @@ data.write('output.fits', overwrite=True)
 
 - 基于 NumPy 完全向量化实现
 - 支持通过 `n_process` 并行处理大批量数据
-- 在普通个人计算机上，单线程处理 **一亿颗恒星** 仅需约 **60 秒**
+- 在普通个人计算机上，单线程处理 **一亿颗恒星** 仅需约 **100 秒**
 
 ---
 

@@ -1,5 +1,3 @@
-# your_package/core.py
-
 from pathlib import Path
 from functools import lru_cache
 import pandas as pd
@@ -22,48 +20,6 @@ LOCAL_DATA_PATH = Path(user_data_dir(APP_NAME)) / DATA_FILENAME
 
 _HEALPIX = HEALPix(nside=1024, order='ring')
 
-# --- 新增的多进程 Worker 相关部分 ---
-# 这部分代码必须在模块的顶层
-
-# 全局变量，用于在每个工作进程中存储加载的数据
-# 这样可以避免在每个任务中重复加载数据
-worker_df = None
-
-def init_worker():
-    """
-    Initializer for each worker process.
-    This function is called once per worker process when the pool is created.
-    It loads the main data file into a global variable `worker_df` for that process.
-    """
-    global worker_df
-    print(f"[dustmaps3d-worker] Initializing worker process {mp.current_process().pid}...")
-    # 调用 load_data() 来下载（如果需要）并加载数据
-    worker_df = load_data()
-    print(f"[dustmaps3d-worker] Worker process {mp.current_process().pid} initialized.")
-
-
-def dustmaps3d_worker_task(args):
-    """
-    The actual task function executed by each worker process.
-    It takes a chunk of coordinates, processes them in a vectorized way,
-    and returns the results.
-    """
-    l_chunk, b_chunk, d_chunk = args
-
-    # 确保 worker 已经被正确初始化
-    if worker_df is None:
-        raise RuntimeError("Worker process not initialized. `worker_df` is None.")
-
-    # 这是一个向量化的操作，非常高效
-    pix_ids = _HEALPIX.lonlat_to_healpix(l_chunk * u.deg, b_chunk * u.deg)
-    rows = worker_df.iloc[pix_ids].copy()
-    rows['distance'] = d_chunk
-    
-    # 直接调用核心的 map 函数来计算结果
-    return map(rows)
-    
-
-# --- 你的原始代码部分（大部分保持不变） ---
 
 class TqdmUpTo(tqdm):
     def update_to(self, b=1, bsize=1, tsize=None):
@@ -79,10 +35,9 @@ def load_data():
         LOCAL_DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
         with TqdmUpTo(unit='B', unit_scale=True, unit_divisor=1024, miniters=1, desc=DATA_FILENAME) as t:
             urllib.request.urlretrieve(DATA_URL, LOCAL_DATA_PATH, reporthook=t.update_to)
-    # 使用 pd.read_parquet 读取数据
     return pd.read_parquet(LOCAL_DATA_PATH)
 
-# ... (bubble_diffuse, component4, diffusion_derived_function, etc. 保持不变) ...
+
 def bubble_diffuse(x, h, b_lim, diffuse_dust_rho, bubble):
     span = 0.01
     span_0 = h / np.sin(np.deg2rad(np.abs(b_lim)))
@@ -183,14 +138,15 @@ def map(df):
 
     sigma_finally[distance >= 4] = df['sigma_2_max'][distance >= 4]
 
-    # map 函数现在返回一个包含4个numpy数组的元组
-    return EBV.values, dust.values, sigma_finally, df['max_distance'].values
+    return EBV, dust, sigma_finally, df['max_distance']
 
 
-# --- 删除旧的、低效的 _dustmaps3d_worker ---
-# def _dustmaps3d_worker(args):
-#     ...
 
+
+def _dustmaps3d_worker(args):
+    l_chunk, b_chunk, d_chunk = args
+    results = [dustmaps3d(l, b, d) for l, b, d in zip(l_chunk, b_chunk, d_chunk)]
+    return list(zip(*results))  # (EBV, dust, sigma, max_d)
 
 def dustmaps3d(l, b, d, n_process: int = None):
     """
@@ -225,6 +181,7 @@ def dustmaps3d(l, b, d, n_process: int = None):
     - When using `n_process`, make sure `l`, `b`, `d` are arrays of equal length.
     - This function uses `multiprocessing.Pool` internally and is safe for CPU-bound batch queries.
     """
+
     l = np.atleast_1d(l)
     b = np.atleast_1d(b)
     d = np.atleast_1d(d)
@@ -236,42 +193,28 @@ def dustmaps3d(l, b, d, n_process: int = None):
         print("[dustmaps3d] Error: Input `l` and `b` must not contain NaN values.")
         raise ValueError("NaN values detected in `l` or `b`. These are not supported by HEALPix mapping.")
 
-    # --- 单进程模式 (修改以匹配 map 的新返回值) ---
-    if n_process is None or n_process < 2 or len(l) <= 1:
+    if n_process is None or len(l) == 1:
         df = load_data()
         pix_ids = _HEALPIX.lonlat_to_healpix(l * u.deg, b * u.deg)
         rows = df.iloc[pix_ids].copy()
         rows['distance'] = d
-        # map现在返回numpy数组，这很好
-        return map(rows)
+        EBV, dust, sigma_finally, max_d = map(rows)
+        return EBV, dust, sigma_finally, max_d
 
-    # --- 多进程模式 (完全重写) ---
     else:
-        # 使用 'spawn' 上下文来确保跨平台的一致性和安全性
-        # 这是解决 Windows 问题的关键
-        ctx = mp.get_context("spawn")
-        
-        # 将输入数据按进程数分块
         chunks = np.array_split(np.arange(len(l)), n_process)
-        # 为每个 worker 准备参数 (每个 worker 接收一个数据块)
-        args_list = [(l[chunk], b[chunk], d[chunk]) for chunk in chunks if len(chunk) > 0]
+        args = [(l[chunk], b[chunk], d[chunk]) for chunk in chunks if len(chunk) > 0]
 
-        # 创建一个 Pool，并指定 initializer
-        # initializer=init_worker 会在每个工作进程启动时调用 init_worker()
-        with ctx.Pool(processes=n_process, initializer=init_worker) as pool:
-            # pool.map 会将 args_list 中的每个元素传递给 dustmaps3d_worker_task
-            # results 将是一个列表，每个元素是 map() 的返回值 (一个元组)
-            results = pool.map(dustmaps3d_worker_task, args_list)
+        with mp.Pool(processes=n_process) as pool:
+            results = pool.map(_dustmaps3d_worker, args)
 
-        # 合并来自所有 worker 的结果
-        if not results:
-            return np.array([]), np.array([]), np.array([]), np.array([])
-        
-        # `results` 是一个列表，例如：[(ebv1, dust1, ...), (ebv2, dust2, ...)]
-        # 使用 zip(*) 将其转置为 [(ebv1, ebv2), (dust1, dust2), ...]
-        ebv_list, dust_list, sigma_list, maxd_list = zip(*results)
+        ebv_list, dust_list, sigma_list, maxd_list = [], [], [], []
+        for ebv, dust, sigma, maxd in results:
+            ebv_list.append(np.concatenate(ebv))
+            dust_list.append(np.concatenate(dust))
+            sigma_list.append(np.concatenate(sigma))
+            maxd_list.append(np.concatenate(maxd))
 
-        # 使用 np.concatenate 将每个部分连接成一个大的 numpy 数组
         return (
             np.concatenate(ebv_list),
             np.concatenate(dust_list),
