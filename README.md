@@ -103,7 +103,7 @@ Estimates 3D dust extinction and related quantities for given galactic coordinat
 
 - Fully vectorized and optimized with NumPy
 - Supports multiprocessing with `n_process` argument
-- On a modern personal computer, evaluating **100 million stars takes only ~100 seconds**
+- On a modern personal computer, evaluating **100 million stars takes only ~60 seconds**
 
 ---
 
