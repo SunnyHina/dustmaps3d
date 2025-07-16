@@ -1,3 +1,6 @@
+**Read this in: [English](README.md) | [中文](README.zh-CN.md)**
+
+
 # dustmaps3d
 
 🌌 **An all-sky 3D dust extinction map based on Gaia and LAMOST**

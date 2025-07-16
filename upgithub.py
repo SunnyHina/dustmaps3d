@@ -28,13 +28,20 @@ def run(cmd: str, cwd: Path = None):
 # ====== 推送代码到 GitHub（包含 pyproject、README、核心代码等）======
 def push_code_to_github():
     print("🚀 Pushing code to GitHub...")
-    run("git fetch origin")
-    run("git pull --rebase origin main")  # 可选，避免冲突
+
+    # 不再拉取远程分支，直接添加所有文件
     run("git add .")
-    result = subprocess.run("git diff-index --quiet HEAD || echo 'has_changes'", shell=True, capture_output=True, text=True)
+    
+    result = subprocess.run(
+        "git diff-index --quiet HEAD || echo 'has_changes'",
+        shell=True,
+        capture_output=True,
+        text=True
+    )
+    
     if 'has_changes' in result.stdout:
         run('git commit -m "🔄 Update version, docs, and data link"')
-        run("git push origin main")
+        run("git push --force origin main")
     else:
         print("✅ No changes to commit.")
         
