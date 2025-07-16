@@ -54,25 +54,18 @@ import numpy as np
 from astropy.table import Table
 from dustmaps3d import dustmaps3d
 
-def main():
-    data = Table.read('input.fits')   
-    l = data['l'].astype(float)
-    b = data['b'].astype(float)
-    d = data['distance'].astype(float)
+data = Table.read('input.fits')   
+l = data['l'].astype(float)
+b = data['b'].astype(float)
+d = data['distance'].astype(float)
 
-    # To enable multi-process parallelization, specify the 'n_process' parameter with the desired number of processes (e.g., n_process=4). If omitted, the function will run in single-threaded mode and does not require wrapping inside a main() function.
-    EBV, dust, sigma, max_d = dustmaps3d(l, b, d, n_process=4)
+EBV, dust, sigma, max_d = dustmaps3d(l, b, d)
 
-    data['EBV_3d'] = EBV
-    data['dust'] = dust
-    data['sigma'] = sigma
-    data['max_distance'] = max_d
-    data.write('output.fits', overwrite=True)
-
-
-# When using multiprocessing, wrap the main routine in this conditional statement to ensure compatibility with Windows operating system.
-if __name__ == '__main__':
-    main()
+data['EBV_3d'] = EBV
+data['dust'] = dust
+data['sigma'] = sigma
+data['max_distance'] = max_d
+data.write('output.fits', overwrite=True)
 ```
 
 ---
@@ -109,7 +102,6 @@ Estimates 3D dust extinction and related quantities for given galactic coordinat
 ## ⚡ Performance
 
 - Fully vectorized and optimized with NumPy
-- Supports multiprocessing with `n_process` argument
 - On a modern personal computer, evaluating **100 million stars takes only ~100 seconds**
 
 ---

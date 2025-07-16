@@ -52,24 +52,19 @@ import numpy as np
 from astropy.table import Table
 from dustmaps3d import dustmaps3d
 
-def main():
-    data = Table.read('input.fits')   
-    l = data['l'].astype(float)
-    b = data['b'].astype(float)
-    d = data['distance'].astype(float)
+data = Table.read('input.fits')   
+l = data['l'].astype(float)
+b = data['b'].astype(float)
+d = data['distance'].astype(float)
 
-    # 若要启用多线程加速，请指定参数 n_process = 进程数（例如 n_process=4），不指定 n_process 即为单线程，就可以不用包裹进main函数。
-    EBV, dust, sigma, max_d = dustmaps3d(l, b, d, n_process=4)
+EBV, dust, sigma, max_d = dustmaps3d(l, b, d)
 
-    data['EBV_3d'] = EBV
-    data['dust'] = dust
-    data['sigma'] = sigma
-    data['max_distance'] = max_d
-    data.write('output.fits', overwrite=True)
+data['EBV_3d'] = EBV
+data['dust'] = dust
+data['sigma'] = sigma
+data['max_distance'] = max_d
+data.write('output.fits', overwrite=True)
 
-# 使用多进程时，为确保 Windows 兼容性，主程序必须包裹在此判断中
-if __name__ == '__main__':
-    main()
 ```
 
 ---
@@ -104,7 +99,6 @@ if __name__ == '__main__':
 ## ⚡ 性能
 
 - 基于 NumPy 完全向量化实现
-- 支持通过 `n_process` 并行处理大批量数据
 - 在普通个人计算机上，单线程处理 **一亿颗恒星** 仅需约 **100 秒**
 
 ---

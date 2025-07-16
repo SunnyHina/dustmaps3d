@@ -7,7 +7,6 @@ from tqdm import tqdm
 from platformdirs import user_data_dir
 from astropy_healpix import HEALPix
 from astropy import units as u
-import multiprocessing as mp
 import warnings
 
 warnings.filterwarnings("ignore", category=RuntimeWarning, message="overflow encountered in exp")
@@ -130,7 +129,7 @@ def _dustmaps3d_worker(args):
     results = [dustmaps3d(l, b, d) for l, b, d in zip(l_chunk, b_chunk, d_chunk)]
     return list(zip(*results))  # (EBV, dust, sigma, max_d)
 
-def dustmaps3d(l, b, d, n_process: int = None):
+def dustmaps3d(l, b, d):
     """
     3D dust map (Wang et al. 2025).
 
@@ -174,32 +173,10 @@ def dustmaps3d(l, b, d, n_process: int = None):
     if np.isnan(l).any() or np.isnan(b).any():
         print("[dustmaps3d] Error: Input `l` and `b` must not contain NaN values.")
         raise ValueError("NaN values detected in `l` or `b`. These are not supported by HEALPix mapping.")
-
-    if n_process is None or len(l) == 1:
-        df = load_data()
-        pix_ids = _HEALPIX.lonlat_to_healpix(l * u.deg, b * u.deg)
-        rows = df.iloc[pix_ids].copy()
-        rows['distance'] = d
-        EBV, dust, sigma_finally, max_d = map(rows)
-        return EBV, dust, sigma_finally, max_d
-
-    else:
-        chunks = np.array_split(np.arange(len(l)), n_process)
-        args = [(l[chunk], b[chunk], d[chunk]) for chunk in chunks if len(chunk) > 0]
-
-        with mp.Pool(processes=n_process) as pool:
-            results = pool.map(_dustmaps3d_worker, args)
-
-        ebv_list, dust_list, sigma_list, maxd_list = [], [], [], []
-        for ebv, dust, sigma, maxd in results:
-            ebv_list.append(np.concatenate(ebv))
-            dust_list.append(np.concatenate(dust))
-            sigma_list.append(np.concatenate(sigma))
-            maxd_list.append(np.concatenate(maxd))
-
-        return (
-            np.concatenate(ebv_list),
-            np.concatenate(dust_list),
-            np.concatenate(sigma_list),
-            np.concatenate(maxd_list)
-        )
+    
+    df = load_data()
+    pix_ids = _HEALPIX.lonlat_to_healpix(l * u.deg, b * u.deg)
+    rows = df.iloc[pix_ids].copy()
+    rows['distance'] = d
+    EBV, dust, sigma_finally, max_d = map(rows)
+    return EBV, dust, sigma_finally, max_d
