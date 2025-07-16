@@ -27,12 +27,17 @@ def run(cmd: str, cwd: Path = None):
 
 # ====== 推送代码到 GitHub（包含 pyproject、README、核心代码等）======
 def push_code_to_github():
-    print("🚀 推送代码到 GitHub 仓库...")
+    print("🚀 Pushing code to GitHub...")
+    run("git fetch origin")
+    run("git pull --rebase origin main")  # 可选，避免冲突
     run("git add .")
-    # 如果没有实际改动，跳过 commit 不报错
-    run('git commit -m "🔄 Update version, docs, and data link" || echo \"✅ 无需提交\"')
-    run("git push origin main")
-
+    result = subprocess.run("git diff-index --quiet HEAD || echo 'has_changes'", shell=True, capture_output=True, text=True)
+    if 'has_changes' in result.stdout:
+        run('git commit -m "🔄 Update version, docs, and data link"')
+        run("git push origin main")
+    else:
+        print("✅ No changes to commit.")
+        
 # ====== 创建 release 并上传数据文件 ======
 def upload_release_asset():
     print("📤 创建 GitHub Release 并上传数据文件...")
