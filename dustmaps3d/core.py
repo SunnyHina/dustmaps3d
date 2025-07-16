@@ -180,3 +180,124 @@ def dustmaps3d(l, b, d):
     rows['distance'] = d
     EBV, dust, sigma_finally, max_d = read_map(rows)
     return EBV, dust, sigma_finally, max_d
+
+
+def plot_dust_section(
+    axis1, range1,
+    axis2, range2,
+    fixed_axis, fixed_value,
+    resolution=0.02,
+    smooth_sigma=0.5,
+    vmin=0.01,
+    vmax=5,
+    norm_type='log',  # 'log' or 'linear'
+    colorbar_ticks=None,
+    cmap='Spectral_r',
+    figsize=(8, 6),
+    save=False,
+    show=True,
+    filename=None
+):
+    """
+    绘制银河尘埃分布图的任意二维平面切片（基于 dustmaps3d）。
+
+    参数：
+    - axis1, axis2: 要绘制的两个轴（'x', 'y', 'z'）
+    - range1, range2: 对应轴的范围，例如 [-4, 4]
+    - fixed_axis: 第三个固定轴（'x', 'y', 'z'）
+    - fixed_value: 该轴的切片位置 [kpc]
+    - resolution: 网格分辨率 [kpc]
+    - smooth_sigma: 高斯平滑标准差 [单位：像素]
+    - vmin, vmax: 色条的最小最大值
+    - norm_type: 色条归一化类型：'log' 或 'linear'
+    - colorbar_ticks: 色条刻度（可选 list）
+    - cmap: 色图（如 'Spectral_r'）
+    - figsize: 图像大小（单位英寸）
+    - save: 是否保存图像
+    - filename: 保存路径（如 'yz_slice.png'）
+    """
+    import matplotlib.pyplot as plt
+    from astropy.coordinates import SkyCoord, CartesianRepresentation
+    from matplotlib.colors import LogNorm, Normalize
+    from scipy.ndimage import gaussian_filter
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    
+    # 1. 检查维度合法性
+    all_axes = {'x', 'y', 'z'}
+    assert {axis1, axis2, fixed_axis} == all_axes, "axis 输入必须覆盖 x, y, z 各一维"
+
+    # 2. 构造二维网格
+    vals1 = np.arange(range1[0] + resolution/2, range1[1], resolution)
+    vals2 = np.arange(range2[0] + resolution/2, range2[1], resolution)
+    A, B = np.meshgrid(vals1, vals2, indexing='ij')
+    coords = {'x': None, 'y': None, 'z': None}
+    coords[axis1] = A
+    coords[axis2] = B
+    coords[fixed_axis] = np.full_like(A, fixed_value)
+
+    # 3. 构建 DataFrame
+    grid = np.vstack([coords['x'].ravel(), coords['y'].ravel(), coords['z'].ravel()]).T
+    df = pd.DataFrame(grid, columns=['x', 'y', 'z'])
+
+    # 4. 转换为 SkyCoord
+    cart = CartesianRepresentation(df['x'].values * u.kpc,
+                                   df['y'].values * u.kpc,
+                                   df['z'].values * u.kpc)
+    skycoord = SkyCoord(cart, frame='galactic')
+    df['l'] = skycoord.l.deg
+    df['b'] = skycoord.b.deg
+    df['d'] = skycoord.distance.kpc
+
+    # 5. 查询 dustmaps3d
+    l, b, d = df['l'].values, df['b'].values, df['d'].values
+    _, dust, _, max_d = dustmaps3d(l, b, d)
+    df['dust'] = np.asarray(dust)
+    mask = df['d'].to_numpy() <= np.asarray(max_d)
+    df = df.loc[mask]
+
+    # 6. 转换为二维图像
+    pivot = df.pivot_table(index=axis2, columns=axis1, values='dust')
+    smoothed = gaussian_filter(pivot.values, sigma=smooth_sigma)
+
+    if show:
+        fig, ax = plt.subplots(figsize=figsize)
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+
+        # 颜色映射控制
+        if norm_type == 'log':
+            norm = LogNorm(vmin=vmin, vmax=vmax)
+        elif norm_type == 'linear':
+            norm = Normalize(vmin=vmin, vmax=vmax)
+        else:
+            raise ValueError("norm_type 只能为 'log' 或 'linear'")
+
+        # 图像绘制
+        img = ax.imshow(smoothed,
+                        extent=[pivot.columns.min(), pivot.columns.max(),
+                                pivot.index.min(), pivot.index.max()],
+                        origin='lower',
+                        aspect='equal',
+                        cmap=cmap,
+                        norm=norm)
+
+        # colorbar 设置
+        cbar = fig.colorbar(img, cax=cax)
+        cbar.set_label('Dust [mag/kpc]')
+        if colorbar_ticks is not None:
+            cbar.set_ticks(colorbar_ticks)
+            cbar.set_ticklabels([f"{v:.2g}" for v in colorbar_ticks])
+
+        # 轴标签与标题
+        ax.set_xlabel(f"{axis1.upper()} [kpc]")
+        ax.set_ylabel(f"{axis2.upper()} [kpc]")
+        ax.set_title(f"Dust in {axis1.upper()}{axis2.upper()} Plane at {fixed_axis} = {fixed_value} kpc")
+
+        # 保存
+        if save and filename:
+            plt.savefig(filename, dpi=300)
+            print(f"图像已保存为 {filename}")
+
+        plt.tight_layout()
+        plt.show()
+    return smoothed
