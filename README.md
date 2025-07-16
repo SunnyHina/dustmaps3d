@@ -22,7 +22,7 @@ pip install dustmaps3d
 ```
 
 **Note:** Installing the package does *not* include the data file.  
-The ~400 MB model data will be **automatically downloaded** from GitHub on **first use**.  
+The ~350 MB model data will be **automatically downloaded** from GitHub on **first use**.  
 ⚠️ If you experience network issues when downloading from GitHub,  
 you can manually download the data from NADC:  
 🔗 https://nadc.china-vo.org/res/r101619/

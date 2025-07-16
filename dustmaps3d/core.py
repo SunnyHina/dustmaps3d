@@ -31,7 +31,7 @@ class TqdmUpTo(tqdm):
 @lru_cache(maxsize=1)
 def load_data():
     if not LOCAL_DATA_PATH.exists():
-        print(f"[dustmaps3d] Downloading {DATA_FILENAME} (~400MB)...")
+        print(f"[dustmaps3d] Downloading {DATA_FILENAME} (~350MB)...")
         LOCAL_DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
         with TqdmUpTo(unit='B', unit_scale=True, unit_divisor=1024, miniters=1, desc=DATA_FILENAME) as t:
             urllib.request.urlretrieve(DATA_URL, LOCAL_DATA_PATH, reporthook=t.update_to)
