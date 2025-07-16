@@ -99,7 +99,7 @@ def derivative_of_component4(x, b_lim, bubble, diffuse_dust_rho, h, distance_1, 
             + derivative_of_sigmoid(x, a_4, b_4, c_4) 
             )
 
-def map(df):
+def read_map(df):
     distance = df['distance'].fillna(df['max_distance'])
     EBV = component4(distance, df['b_lim'], df['bubble'], df['diffuse_dust_rho'], df['h'], 
                     df['distance_1'], df['span_1'], df['Cum_EBV_1'], 
@@ -178,5 +178,5 @@ def dustmaps3d(l, b, d):
     pix_ids = _HEALPIX.lonlat_to_healpix(l * u.deg, b * u.deg)
     rows = df.iloc[pix_ids].copy()
     rows['distance'] = d
-    EBV, dust, sigma_finally, max_d = map(rows)
+    EBV, dust, sigma_finally, max_d = read_map(rows)
     return EBV, dust, sigma_finally, max_d
