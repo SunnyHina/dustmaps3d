@@ -56,7 +56,7 @@ from dustmaps3d import dustmaps3d
 data = Table.read('input.fits')   
 l = data['l'].astype(float)
 b = data['b'].astype(float)
-d = data['distance'].astype(float)
+d = data['d'].astype(float)
 
 EBV, dust, sigma, max_d = dustmaps3d(l, b, d)
 
