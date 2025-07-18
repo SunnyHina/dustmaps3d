@@ -42,7 +42,7 @@ EBV, dust, sigma, max_d = dustmaps3d(l, b, d)
 print(f"EBV: {EBV.values[0]:.4f} [mag]")
 print(f"Dust: {dust.values[0]:.4f} [mag/kpc]")
 print(f"Sigma: {sigma.values[0]:.4f} [mag]")
-print(f"Max distance: {max_d.iloc.values[0]:.4f} kpc")
+print(f"Max distance: {max_d.values[0]:.4f} kpc")
 
 ```
 
