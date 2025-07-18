@@ -21,7 +21,8 @@ pip install dustmaps3d
 ```
 
 **注意：** 安装包本身并不包含模型数据。  
-约 350MB 的数据文件将在**首次使用时自动从 GitHub 下载**。  
+约 350MB 的数据文件将在**首次使用时自动从 GitHub 下载**。 
+国内下载可能需要科学上网 QAQ
 ⚠️ 若遇到网络连接问题，也可从 NADC 手动下载数据：  
 🔗 https://nadc.china-vo.org/res/r101619/
 
@@ -38,11 +39,10 @@ d = [1.5]
 
 EBV, dust, sigma, max_d = dustmaps3d(l, b, d)
 
-print(f"EBV: {EBV[0]:.4f} [mag]")
-print(f"Dust: {dust[0]:.4f} [mag/kpc]")
-print(f"Sigma: {sigma[0]:.4f} [mag]")
-print(f"Max distance: {max_d.iloc[0]:.4f} kpc")
-
+print(f"EBV: {EBV.values[0]:.4f} [mag]")
+print(f"Dust: {dust.values[0]:.4f} [mag/kpc]")
+print(f"Sigma: {sigma.values[0]:.4f} [mag]")
+print(f"Max distance: {max_d.iloc.values[0]:.4f} kpc")
 ```
 
 **FITS 文件批量处理示例：**
