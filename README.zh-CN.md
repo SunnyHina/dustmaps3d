@@ -22,7 +22,9 @@ pip install dustmaps3d
 
 **注意：** 安装包本身并不包含模型数据。  
 约 350MB 的数据文件将在**首次使用时自动从 GitHub 下载**。 
+
 国内下载可能需要科学上网 QAQ
+
 ⚠️ 若遇到网络连接问题，也可从 NADC 手动下载数据：  
 🔗 https://nadc.china-vo.org/res/r101619/
 
