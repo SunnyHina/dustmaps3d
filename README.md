@@ -106,7 +106,7 @@ Estimates 3D dust extinction and related quantities for given galactic coordinat
 
 ## 📂 Data Version
 
-This version uses `data_v2.1.parquet`, released under [v2.1](https://github.com/Grapeknight/dustmaps3d/releases/tag/v2.1)
+This version uses `data_v2.2.parquet`, released under [v2.2](https://github.com/Grapeknight/dustmaps3d/releases/tag/v2.2)
 
 ---
 

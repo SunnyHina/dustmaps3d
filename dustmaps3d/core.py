@@ -12,7 +12,7 @@ import warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning, message="overflow encountered in exp")
 
 APP_NAME = "dustmaps3d"
-DATA_VERSION = "v2.1"
+DATA_VERSION = "v2.2"
 DATA_FILENAME = f"data_{DATA_VERSION}.parquet"
 DATA_URL = f"https://github.com/Grapeknight/dustmaps3d/releases/download/{DATA_VERSION}/{DATA_FILENAME}"
 LOCAL_DATA_PATH = Path(user_data_dir(APP_NAME)) / DATA_FILENAME

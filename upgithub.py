@@ -4,11 +4,11 @@ from pathlib import Path
 from datetime import date
 
 # ====== 用户可修改的设置 ======
-TAG = "v2.1"  # GitHub Release 的标签
-ASSET_PATH = Path("D:/_3d_map_data/data_v2.1.parquet")  # 要上传的数据文件路径
-ASSET_NAME = "data_v2.1.parquet"  # 上传后在 release 中显示的文件名
+TAG = "v2.2"  # GitHub Release 的标签
+ASSET_PATH = Path("D:/_3d_map_data/data_v2.2.parquet")  # 要上传的数据文件路径
+ASSET_NAME = "data_v2.2.parquet"  # 上传后在 release 中显示的文件名
 REPO = "Grapeknight/dustmaps3d"  # GitHub 仓库名
-RELEASE_TITLE = "Dustmaps3D v2.1"
+RELEASE_TITLE = "Dustmaps3D v2.2"
 RELEASE_NOTES = f"""
 📦 Updated data release for Dustmaps3D
 
