@@ -17,14 +17,13 @@ classifiers = [
   "Operating System :: OS Independent"
 ]
 dependencies = [
-  "numpy>=1.24.3",
-  "pandas>=2.3.1",
-  "astropy>=7.1.0",
+  "numpy>=1.21",          
+  "pandas>=1.5.1",        
+  "astropy>=5.0",         
   "astropy-healpix>=1.0.3",
-  "tqdm>=4.67.1",
-  "platformdirs>=3.0",
-  "fastparquet>=2024.11.0",
-
+  "tqdm>=4.60",
+  "platformdirs>=2.5",
+  "fastparquet>=2023.01"
 ]
 
 [project.urls]
