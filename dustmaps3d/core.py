@@ -8,6 +8,7 @@ from platformdirs import user_data_dir
 from astropy_healpix import HEALPix
 from astropy import units as u
 import warnings
+import requests
 
 warnings.filterwarnings("ignore", category=RuntimeWarning, message="overflow encountered in exp")
 
@@ -37,18 +38,54 @@ def load_data():
             print(f"[dustmaps3d] Detected corrupt or incomplete file: {e}")
             return False
 
+    def download_with_resume(url, path, chunk_size=1024 * 1024, max_retries=10):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temp_file = path.with_suffix(path.suffix + ".part")
+
+        existing_size = temp_file.stat().st_size if temp_file.exists() else 0
+        headers = {"Range": f"bytes={existing_size}-"} if existing_size > 0 else {}
+
+        retries = 0
+        while retries < max_retries:
+            try:
+                with requests.get(url, stream=True, headers=headers, timeout=30) as response:
+                    if response.status_code not in [200, 206]:
+                        raise RuntimeError(f"Unexpected status code: {response.status_code}")
+                    
+                    total_size = int(response.headers.get("Content-Length", 0)) + existing_size
+
+                    with open(temp_file, "ab") as f, tqdm(
+                        initial=existing_size,
+                        total=total_size,
+                        unit="B",
+                        unit_scale=True,
+                        unit_divisor=1024,
+                        desc=path.name
+                    ) as bar:
+                        for chunk in response.iter_content(chunk_size=chunk_size):
+                            if chunk:
+                                f.write(chunk)
+                                bar.update(len(chunk))
+                break
+            except Exception as e:
+                retries += 1
+                print(f"[dustmaps3d] Download failed (attempt {retries}/{max_retries}): {e}")
+                import time; time.sleep(2 ** retries)
+
+        else:
+            raise RuntimeError(f"[dustmaps3d] Download failed after {max_retries} attempts.")
+
+        temp_file.rename(path)
+
     if not LOCAL_DATA_PATH.exists() or not is_parquet_valid(LOCAL_DATA_PATH):
-        print(f"[dustmaps3d] Downloading {DATA_FILENAME} (~400MB)...")
-        LOCAL_DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
+        print(f"[dustmaps3d] Downloading {DATA_FILENAME} with resume support (~400MB)...")
         try:
-            with TqdmUpTo(unit='B', unit_scale=True, unit_divisor=1024, miniters=1, desc=DATA_FILENAME) as t:
-                urllib.request.urlretrieve(DATA_URL, LOCAL_DATA_PATH, reporthook=t.update_to)
+            download_with_resume(DATA_URL, LOCAL_DATA_PATH)
         except Exception as e:
             if LOCAL_DATA_PATH.exists():
-                LOCAL_DATA_PATH.unlink()  # 删除已损坏文件
+                LOCAL_DATA_PATH.unlink()
             raise RuntimeError(f"[dustmaps3d] Failed to download {DATA_FILENAME}: {e}")
-        
-        # 再次验证下载后的文件
+
         if not is_parquet_valid(LOCAL_DATA_PATH):
             raise RuntimeError(f"[dustmaps3d] Downloaded file {DATA_FILENAME} is still not valid.")
 
