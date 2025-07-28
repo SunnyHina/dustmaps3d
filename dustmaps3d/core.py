@@ -33,11 +33,22 @@ def load_data():
         try:
             if path.stat().st_size < 100 * 1024 * 1024:
                 raise ValueError("File too small to be valid.")
-            pd.read_parquet(path, engine='fastparquet', columns=["max_distance"])
+            with open(path, "rb") as f:
+                head = f.read(1024)
+                if b"<html" in head.lower():
+                    raise ValueError("File appears to be an HTML error page.")
+            pd.read_parquet(path, engine="fastparquet", columns=["max_distance"])
             return True
         except Exception as e:
             print(f"[dustmaps3d] Detected corrupt or incomplete file: {e}")
             return False
+
+    def cleanup():
+        for f in LOCAL_DATA_PATH.parent.glob("*"):
+            try:
+                f.unlink()
+            except Exception as e:
+                print(f"[dustmaps3d] Failed to delete {f}: {e}")
 
     def download_with_resume(url, path, chunk_size=1024 * 1024, max_retries=10):
         import time
@@ -51,10 +62,8 @@ def load_data():
 
                 with requests.get(url, stream=True, headers=headers, timeout=30) as response:
                     if existing_size > 0 and response.status_code != 206:
-                        print(f"[dustmaps3d] Warning: server did not honor Range request. Restarting download.")
-                        existing_size = 0
-                        if temp_file.exists():
-                            temp_file.unlink()
+                        print("[dustmaps3d] Warning: server did not honor Range request. Restarting download.")
+                        temp_file.unlink(missing_ok=True)
                         return download_with_resume(url, path, chunk_size, max_retries)
 
                     total_size = int(response.headers.get("Content-Length", 0)) + existing_size
@@ -65,7 +74,7 @@ def load_data():
                         unit="B",
                         unit_scale=True,
                         unit_divisor=1024,
-                        desc=path.name
+                        desc=path.name,
                     ) as bar:
                         for chunk in response.iter_content(chunk_size=chunk_size):
                             if chunk:
@@ -84,21 +93,20 @@ def load_data():
 
     if not LOCAL_DATA_PATH.exists() or not is_parquet_valid(LOCAL_DATA_PATH):
         print(f"[dustmaps3d] Downloading {DATA_FILENAME} with resume support (~400MB)...")
+        cleanup()
         try:
             download_with_resume(DATA_URL, LOCAL_DATA_PATH)
         except Exception as e:
-            if LOCAL_DATA_PATH.exists():
-                LOCAL_DATA_PATH.unlink()
+            cleanup()
             raise RuntimeError(f"[dustmaps3d] Failed to download {DATA_FILENAME}: {e}")
 
-        # 再次验证：如果仍然无效就删除并递归重试
         if not is_parquet_valid(LOCAL_DATA_PATH):
-            print(f"[dustmaps3d] File appears invalid even after download. Removing and retrying...")
-            if LOCAL_DATA_PATH.exists():
-                LOCAL_DATA_PATH.unlink()
+            print("[dustmaps3d] File appears invalid even after download. Cleaning up and retrying...")
+            cleanup()
             return load_data()
 
-    return pd.read_parquet(LOCAL_DATA_PATH, engine='fastparquet')
+    return pd.read_parquet(LOCAL_DATA_PATH, engine="fastparquet")
+
 
 
 
