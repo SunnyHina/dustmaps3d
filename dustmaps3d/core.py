@@ -27,31 +27,34 @@ class TqdmUpTo(tqdm):
             self.total = tsize
         self.update(b * bsize - self.n)
 
-
 @lru_cache(maxsize=1)
 def load_data():
     def is_parquet_valid(path):
         try:
-            pd.read_parquet(path, engine='fastparquet', columns=None, nrows=1)
+            pd.read_parquet(path, engine='fastparquet', columns=["max_distance"])
             return True
         except Exception as e:
             print(f"[dustmaps3d] Detected corrupt or incomplete file: {e}")
             return False
 
     def download_with_resume(url, path, chunk_size=1024 * 1024, max_retries=10):
+        import time
+
         path.parent.mkdir(parents=True, exist_ok=True)
         temp_file = path.with_suffix(path.suffix + ".part")
 
-        existing_size = temp_file.stat().st_size if temp_file.exists() else 0
-        headers = {"Range": f"bytes={existing_size}-"} if existing_size > 0 else {}
-
-        retries = 0
-        while retries < max_retries:
+        for attempt in range(1, max_retries + 1):
             try:
+                existing_size = temp_file.stat().st_size if temp_file.exists() else 0
+                headers = {"Range": f"bytes={existing_size}-"} if existing_size > 0 else {}
+
                 with requests.get(url, stream=True, headers=headers, timeout=30) as response:
-                    if response.status_code not in [200, 206]:
-                        raise RuntimeError(f"Unexpected status code: {response.status_code}")
-                    
+                    if existing_size > 0 and response.status_code != 206:
+                        print(f"[dustmaps3d] Warning: server did not honor Range request. Restarting download.")
+                        existing_size = 0
+                        temp_file.unlink(missing_ok=True)
+                        return download_with_resume(url, path, chunk_size, max_retries)
+
                     total_size = int(response.headers.get("Content-Length", 0)) + existing_size
 
                     with open(temp_file, "ab") as f, tqdm(
@@ -66,11 +69,10 @@ def load_data():
                             if chunk:
                                 f.write(chunk)
                                 bar.update(len(chunk))
-                break
+                break  # 成功退出 retry 循环
             except Exception as e:
-                retries += 1
-                print(f"[dustmaps3d] Download failed (attempt {retries}/{max_retries}): {e}")
-                import time; time.sleep(2 ** retries)
+                print(f"[dustmaps3d] Download failed (attempt {attempt}/{max_retries}): {e}")
+                time.sleep(2 ** attempt)
 
         else:
             raise RuntimeError(f"[dustmaps3d] Download failed after {max_retries} attempts.")
@@ -82,6 +84,7 @@ def load_data():
         try:
             download_with_resume(DATA_URL, LOCAL_DATA_PATH)
         except Exception as e:
+            # ⚠️ 不删除部分下载文件，让用户有机会恢复
             if LOCAL_DATA_PATH.exists():
                 LOCAL_DATA_PATH.unlink()
             raise RuntimeError(f"[dustmaps3d] Failed to download {DATA_FILENAME}: {e}")
@@ -90,6 +93,7 @@ def load_data():
             raise RuntimeError(f"[dustmaps3d] Downloaded file {DATA_FILENAME} is still not valid.")
 
     return pd.read_parquet(LOCAL_DATA_PATH, engine='fastparquet')
+
 
 
 
