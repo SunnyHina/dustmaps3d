@@ -29,12 +29,31 @@ class TqdmUpTo(tqdm):
 
 @lru_cache(maxsize=1)
 def load_data():
-    if not LOCAL_DATA_PATH.exists():
-        print(f"[dustmaps3d] Downloading {DATA_FILENAME} (~350MB)...")
+    def is_parquet_valid(path):
+        try:
+            pd.read_parquet(path, engine='fastparquet', columns=None, nrows=1)
+            return True
+        except Exception as e:
+            print(f"[dustmaps3d] Detected corrupt or incomplete file: {e}")
+            return False
+
+    if not LOCAL_DATA_PATH.exists() or not is_parquet_valid(LOCAL_DATA_PATH):
+        print(f"[dustmaps3d] Downloading {DATA_FILENAME} (~400MB)...")
         LOCAL_DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
-        with TqdmUpTo(unit='B', unit_scale=True, unit_divisor=1024, miniters=1, desc=DATA_FILENAME) as t:
-            urllib.request.urlretrieve(DATA_URL, LOCAL_DATA_PATH, reporthook=t.update_to)
-    return pd.read_parquet(LOCAL_DATA_PATH, engine = 'fastparquet')
+        try:
+            with TqdmUpTo(unit='B', unit_scale=True, unit_divisor=1024, miniters=1, desc=DATA_FILENAME) as t:
+                urllib.request.urlretrieve(DATA_URL, LOCAL_DATA_PATH, reporthook=t.update_to)
+        except Exception as e:
+            if LOCAL_DATA_PATH.exists():
+                LOCAL_DATA_PATH.unlink()  # 删除已损坏文件
+            raise RuntimeError(f"[dustmaps3d] Failed to download {DATA_FILENAME}: {e}")
+        
+        # 再次验证下载后的文件
+        if not is_parquet_valid(LOCAL_DATA_PATH):
+            raise RuntimeError(f"[dustmaps3d] Downloaded file {DATA_FILENAME} is still not valid.")
+
+    return pd.read_parquet(LOCAL_DATA_PATH, engine='fastparquet')
+
 
 
 def bubble_diffuse(x,h,b_lim,diffuse_dust_rho,bubble): 
