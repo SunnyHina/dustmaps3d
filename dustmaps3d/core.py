@@ -49,6 +49,7 @@ def load_data():
                 headers = {"Range": f"bytes={existing_size}-"} if existing_size > 0 else {}
 
                 with requests.get(url, stream=True, headers=headers, timeout=30) as response:
+                    # 如果 Range 请求被忽略，重置并重新下载
                     if existing_size > 0 and response.status_code != 206:
                         print(f"[dustmaps3d] Warning: server did not honor Range request. Restarting download.")
                         existing_size = 0
@@ -69,7 +70,7 @@ def load_data():
                             if chunk:
                                 f.write(chunk)
                                 bar.update(len(chunk))
-                break  # 成功退出 retry 循环
+                break  # 成功
             except Exception as e:
                 print(f"[dustmaps3d] Download failed (attempt {attempt}/{max_retries}): {e}")
                 time.sleep(2 ** attempt)
@@ -77,6 +78,9 @@ def load_data():
         else:
             raise RuntimeError(f"[dustmaps3d] Download failed after {max_retries} attempts.")
 
+        # 🔒 防止 WinError 183：若目标文件已存在则先删除
+        if path.exists():
+            path.unlink()
         temp_file.rename(path)
 
     if not LOCAL_DATA_PATH.exists() or not is_parquet_valid(LOCAL_DATA_PATH):
@@ -84,7 +88,7 @@ def load_data():
         try:
             download_with_resume(DATA_URL, LOCAL_DATA_PATH)
         except Exception as e:
-            # ⚠️ 不删除部分下载文件，让用户有机会恢复
+            # 不删除 .part 文件，让后续可以继续断点续传
             if LOCAL_DATA_PATH.exists():
                 LOCAL_DATA_PATH.unlink()
             raise RuntimeError(f"[dustmaps3d] Failed to download {DATA_FILENAME}: {e}")
@@ -93,8 +97,6 @@ def load_data():
             raise RuntimeError(f"[dustmaps3d] Downloaded file {DATA_FILENAME} is still not valid.")
 
     return pd.read_parquet(LOCAL_DATA_PATH, engine='fastparquet')
-
-
 
 
 def bubble_diffuse(x,h,b_lim,diffuse_dust_rho,bubble): 
