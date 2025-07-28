@@ -31,6 +31,8 @@ class TqdmUpTo(tqdm):
 def load_data():
     def is_parquet_valid(path):
         try:
+            if path.stat().st_size < 100 * 1024 * 1024:
+                raise ValueError("File too small to be valid.")
             pd.read_parquet(path, engine='fastparquet', columns=["max_distance"])
             return True
         except Exception as e:
@@ -39,7 +41,6 @@ def load_data():
 
     def download_with_resume(url, path, chunk_size=1024 * 1024, max_retries=10):
         import time
-
         path.parent.mkdir(parents=True, exist_ok=True)
         temp_file = path.with_suffix(path.suffix + ".part")
 
@@ -49,11 +50,11 @@ def load_data():
                 headers = {"Range": f"bytes={existing_size}-"} if existing_size > 0 else {}
 
                 with requests.get(url, stream=True, headers=headers, timeout=30) as response:
-                    # 如果 Range 请求被忽略，重置并重新下载
                     if existing_size > 0 and response.status_code != 206:
                         print(f"[dustmaps3d] Warning: server did not honor Range request. Restarting download.")
                         existing_size = 0
-                        temp_file.unlink(missing_ok=True)
+                        if temp_file.exists():
+                            temp_file.unlink()
                         return download_with_resume(url, path, chunk_size, max_retries)
 
                     total_size = int(response.headers.get("Content-Length", 0)) + existing_size
@@ -70,15 +71,13 @@ def load_data():
                             if chunk:
                                 f.write(chunk)
                                 bar.update(len(chunk))
-                break  # 成功
+                break
             except Exception as e:
                 print(f"[dustmaps3d] Download failed (attempt {attempt}/{max_retries}): {e}")
                 time.sleep(2 ** attempt)
-
         else:
             raise RuntimeError(f"[dustmaps3d] Download failed after {max_retries} attempts.")
 
-        # 🔒 防止 WinError 183：若目标文件已存在则先删除
         if path.exists():
             path.unlink()
         temp_file.rename(path)
@@ -88,15 +87,19 @@ def load_data():
         try:
             download_with_resume(DATA_URL, LOCAL_DATA_PATH)
         except Exception as e:
-            # 不删除 .part 文件，让后续可以继续断点续传
             if LOCAL_DATA_PATH.exists():
                 LOCAL_DATA_PATH.unlink()
             raise RuntimeError(f"[dustmaps3d] Failed to download {DATA_FILENAME}: {e}")
 
+        # 再次验证：如果仍然无效就删除并递归重试
         if not is_parquet_valid(LOCAL_DATA_PATH):
-            raise RuntimeError(f"[dustmaps3d] Downloaded file {DATA_FILENAME} is still not valid.")
+            print(f"[dustmaps3d] File appears invalid even after download. Removing and retrying...")
+            if LOCAL_DATA_PATH.exists():
+                LOCAL_DATA_PATH.unlink()
+            return load_data()
 
     return pd.read_parquet(LOCAL_DATA_PATH, engine='fastparquet')
+
 
 
 def bubble_diffuse(x,h,b_lim,diffuse_dust_rho,bubble): 
