@@ -34,8 +34,8 @@ dependencies = [
   "tqdm>=4.60",
   "platformdirs>=2.3",
   "fastparquet>=0.8",
-  "requests>=2.20.0"
-
+  "requests>=2.20.0",
+  "pyarrow>=21.0.0",
 ]
 
 [project.urls]
