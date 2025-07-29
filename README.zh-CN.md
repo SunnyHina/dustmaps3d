@@ -21,7 +21,13 @@
 通过 pip 安装：
 
 ```bash
-pip install dustmaps3d
+pip install git+https://github.com/SunnyHina/dustmaps3d.git
+```
+
+使用 pipx 从 GitHub 安装：
+
+```bash
+pipx install git+https://github.com/SunnyHina/dustmaps3d.git
 ```
 
 **注意：** 安装包本身并不包含模型数据。  
@@ -102,9 +108,6 @@ processed_df.to_csv('processed_dustmaps3d.csv', index=False)
 首先，你可以使用 pipx 进行全局安装，在项目根目录运行 pip install . 进行本地安装，或者使用 uvx 来免安装直接运行。
 
 ```bash
-# 使用 pipx 从 GitHub 安装
-pipx install git+https://github.com/SunnyHina/dustmaps3d.git
-
 # 用法: dust <输入文件> <输出文件> [--threads <线程数>]
 
 # 使用 8 个线程处理文件

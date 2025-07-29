@@ -22,7 +22,13 @@ To run directly from GitHub using `uvx`, please ensure you have `uv` installed. 
 Install via pip:
 
 ```bash
-pip install dustmaps3d
+pip install git+https://github.com/SunnyHina/dustmaps3d.git
+```
+
+Install from GitHub using pipx:
+
+```bash
+pipx install git+https://github.com/SunnyHina/dustmaps3d.git
 ```
 
 **Note:** Installing the package does *not* include the data file.  
@@ -102,9 +108,6 @@ You can now process a CSV file directly from your terminal.
 First, you can install it system-wide using pipx, install it locally (pip install . in the project root), or use uvx for a direct, installation-free execution.
 
 ```bash
-# Install from GitHub using pipx
-pipx install git+https://github.com/SunnyHina/dustmaps3d.git
-
 # Usage: dust <input_file> <output_file> [--threads <number_of_threads>]
 
 # Process a file using 8 threads
