@@ -32,7 +32,7 @@ class TqdmUpTo(tqdm):
 def load_data():
     def is_parquet_valid(path):
         try:
-            pd.read_parquet(path, engine='fastparquet', columns=["max_distance"])
+            pd.read_parquet(path, engine='pyarrow', columns=["max_distance"])
             return True
         except Exception as e:
             print(f"[dustmaps3d] Detected corrupt or incomplete file: {e}")

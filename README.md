@@ -3,6 +3,10 @@
 
 # dustmaps3d
 
+**Note**: This is a fork of the original [Grapeknight/dustmaps3d](https://github.com/Grapeknight/dustmaps3d) project. This version introduces performance improvements through multiprocessing and adds a convenient command-line interface (CLI) for batch processing.
+
+To run directly from GitHub using `uvx`, please ensure you have `uv` installed. You can find the installation guide in the [official `uv` documentation](https://github.com/astral-sh/uv).
+
 🌌 **An all-sky 3D dust extinction map based on Gaia and LAMOST**
 
 📄 *Wang et al. (2025),* *An all-sky 3D dust map based on Gaia and LAMOST*  
@@ -69,10 +73,13 @@ data.write('output.fits', overwrite=True)
 
 **Batch Processing with Pandas DataFrame**
 
+For integration into Python workflows, the `dustmaps3d_from_df` function has been added. It leverages multiprocessing to efficiently handle large DataFrames.
+
 ```python
 import pandas as pd
 from dustmaps3d import dustmaps3d_from_df
 
+# Example with a large DataFrame (30 million rows)
 data = {
     'l': [120.0, 80.5, 210.1] * 10000000,
     'b': [30.0, -15.2, 45.5] * 10000000,
@@ -80,17 +87,31 @@ data = {
 }
 df = pd.DataFrame(data)
 
-# You can customize the number of items (chunk size) handled by each process.
+# Process the DataFrame using 16 cores.
+# You can customize the number of rows each core handles via 'chunk_size'.
 processed_df = dustmaps3d_from_df(df, n_process=16, chunk_size=100000)
 
+# Save the results to a new CSV file
 processed_df.to_csv('processed_dustmaps3d.csv', index=False)
 ```
 
 **Command-Line Interface (CLI)**
 
+You can now process a CSV file directly from your terminal.
+
+First, ensure the package is installed (`pip install .` in the project root) or use `uvx` for a direct, installation-free execution:
+
 ```bash
+# Usage: dust <input_file> <output_file> [--threads <number_of_threads>]
+
+# Process a file using 8 threads
 dust input.csv output.csv --threads 8
+
+# Or run directly from GitHub without installation using uvx
+uvx --from git+https://github.com/SunnyHina/dustmaps3d.git dust input.csv output.csv --threads 8
 ```
+
+Your `input.csv` must contain the columns: `l` (Galactic longitude), `b` (Galactic latitude), and `d` (distance in kpc).
 
 ---
 
