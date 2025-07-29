@@ -2,6 +2,10 @@
 
 # dustmaps3d
 
+**注意**：本项目是 [Grapeknight/dustmaps3d](https://github.com/Grapeknight/dustmaps3d) 的一个 fork。此版本通过引入多进程计算提升性能，并增加了一个方便的命令行工具（CLI）用于批量处理。
+
+如果需要使用 uvx 直接从 GitHub 运行，请确保您已经安装了 `uv`。您可以访问 [uv 官方文档](https://github.com/astral-sh/uv) 获取安装指南。
+
 🌌 **基于 Gaia 和 LAMOST 构建的全天三维尘埃消光图**
 
 📄 *Wang et al. (2025)，An all-sky 3D dust map based on Gaia and LAMOST*  
@@ -71,10 +75,13 @@ data.write('output.fits', overwrite=True)
 
 **使用 Pandas DataFrame 进行批量处理**
 
+为了方便地集成到 Python 工作流中，我们添加了 `dustmaps3d_from_df` 函数。它利用多进程来高效地处理大规模的 Pandas DataFrame。
+
 ```python
 import pandas as pd
 from dustmaps3d import dustmaps3d_from_df
 
+# 一个处理大规模 DataFrame (三千万行) 的示例
 data = {
     'l': [120.0, 80.5, 210.1] * 10000000,
     'b': [30.0, -15.2, 45.5] * 10000000,
@@ -82,17 +89,31 @@ data = {
 }
 df = pd.DataFrame(data)
 
-# 可以自定义每个进程处理的条数 (chunk_size)。
+# 使用 16 个核心处理 DataFrame。
+# 你可以通过 'chunk_size' 参数自定义每个核心处理的数据条数。
 processed_df = dustmaps3d_from_df(df, n_process=16, chunk_size=100000)
 
+# 将处理结果保存到新的 CSV 文件
 processed_df.to_csv('processed_dustmaps3d.csv', index=False)
 ```
 
 **通过命令行使用**
 
+现在你可以直接在终端中处理 CSV 文件。
+
+首先，请确保已经安装了本工具包（在项目根目录运行 `pip install .`），或者使用 `uvx` 来免安装直接运行。
+
 ```bash
+# 用法: dust <输入文件> <输出文件> [--threads <线程数>]
+
+# 使用 8 个线程处理文件
 dust input.csv output.csv --threads 8
+
+# 或使用 uvx 直接从 GitHub 运行，无需安装
+uvx --from git+https://github.com/SunnyHina/dustmaps3d.git dust input.csv output.csv --threads 8
 ```
+
+您的 `input.csv` 文件必须包含以下列：`l` (银经), `b` (银纬), 和 `d` (距离, 单位 kpc)。
 
 ---
 ## 🧠 函数说明
