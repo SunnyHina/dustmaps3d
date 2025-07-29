@@ -99,9 +99,12 @@ processed_df.to_csv('processed_dustmaps3d.csv', index=False)
 
 You can now process a CSV file directly from your terminal.
 
-First, ensure the package is installed (`pip install .` in the project root) or use `uvx` for a direct, installation-free execution:
+First, you can install it system-wide using pipx, install it locally (pip install . in the project root), or use uvx for a direct, installation-free execution.
 
 ```bash
+# Install from GitHub using pipx
+pipx install git+https://github.com/SunnyHina/dustmaps3d.git
+
 # Usage: dust <input_file> <output_file> [--threads <number_of_threads>]
 
 # Process a file using 8 threads
